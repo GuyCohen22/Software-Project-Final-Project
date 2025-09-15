@@ -298,3 +298,84 @@ static Status matrix_load_from_path(const char* file_path, Matrix* out_matrix) {
 
     return status_code;
 }
+
+/* ======================= Metrics (Distances & Norms) ======================== */
+
+/**
+ * @brief Computes the Euclidean distance between two vectors.
+ *
+ * @param vector1 Pointer to the first vector (length dim).
+ * @param vector2 Pointer to the second vector (length dim).
+ * @param dim     Number of elements in each vector (must be > 0).
+ *
+ * @return The Euclidean distance as a double.
+ */
+statis double euclidean_distance(const double* vector1, const double* vector2, int dim) {
+    int i;
+    double sum = 0;
+    
+    for (i = 0; i < dim; i++) {
+        sum += (vector1[i] - vector2[i]) * (vector1[i] - vector2[i]);
+    }
+
+    return sqrt(sum);
+}
+
+/**
+ * @brief Computes the squared Frobenius norm of a matrix.
+ *
+ * Adds up the square of every element in the matrix and returns the total.
+ * The matrix is given as an array of row pointers and is not modified.
+ *
+ * @param data Array of row pointers to the matrix.
+ * @param rows Number of rows (must be > 0).
+ * @param cols Number of columns (must be > 0).
+ *
+ * @return The squared Frobenius norm on success; -1 if inputs are invalid.
+ */
+
+static double calculate_frobenius_norm_squared(const double* const* data, int rows, int cols) {
+    int i, j;
+    double sum = 0;
+
+    if (!data || rows <= 0 || cols <= 0) {
+        return -1;
+    }
+
+    for (i = 0; i < rows; i++) {
+        for (j = 0; j < cols; j++) {
+            sum += data[i][j] * data[i][j];
+        }
+    }
+
+    return sum;
+}
+
+
+/* ======================= Matrix Algebra Utilities =========================== */
+/**
+ * @brief Sums the elements of a vector.
+ *
+ * Computes the sum of vector[i] for i = 0,1,...,dim-1.
+ *
+ * @param vector Pointer to the vector (length dim).
+ * @param dim    Number of elements in the vector.
+ *
+ * @return The sum of the elements as a double.
+ */
+static double sum_vector_coordinates(const double* vector, int dim) {
+    int i;
+    double sum = 0
+
+    for (i = 0; i < dim; i++) {
+        sum += vector[i];
+    }
+
+    return sum;
+}
+
+static double** transpose(double** data, int rows, int cols) {
+    int i, j;
+    double** transposed_data;
+    
+}
