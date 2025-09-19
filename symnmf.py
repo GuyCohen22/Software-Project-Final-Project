@@ -51,7 +51,7 @@ def compute_symnmf(X, k):
     
     W = compute_norm(X, k)
     initial_H = init_H(W, k)
-    return symnmf.symnmf(np.array(W).tolist(), initial_H.tolist())
+    return symnmf.symnmf(np.array(W).tolist(), initial_H.tolist(), k, 1e-4)
     
 
 def print_result(result):
