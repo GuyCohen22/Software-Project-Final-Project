@@ -111,7 +111,7 @@ static double** matrix_data_alloc(int rows, int cols) {
  * @param num_of_matrices Number of entries in 'matrices'. 
  * @param rows Number of rows to free in each matrix.
  *
- * @note This function does **not** free the 'matrices' array itself—only the
+ * @note This function does **not** free the 'matrices' array itself-only the
  *       matrices it points to. Free the container separately if it was
  *       heap-allocated.
  */
@@ -720,7 +720,7 @@ void compute_normalized_similarity_matrix(double*** out_norm_sim_matrix, double*
 /* ======================= Output / Printing Utilities ======================== */
 
 /**
- * @brief Print a rows×cols matrix to stdout in CSV format.
+ * @brief Print a rows*cols matrix to stdout in CSV format.
  *
  * Emits exactly 'rows' lines; each line contains 'cols' values formatted
  * with "%.4f" and separated by commas (no trailing comma). A newline is
