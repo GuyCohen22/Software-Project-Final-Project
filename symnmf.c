@@ -27,13 +27,13 @@ typedef struct {
 
 /* Abort-from-main helper: if (result != STATUS_OK), print a generic error
  * and return 1 from the current function (int-returning, typically main). */
-#define ASSERT_OK(result)                                                                                         \
-    do {                                                                                                               \
-        if (result != STATUS_OK) {                                                                                       \
-            printf("An Error Has Occurred\n");                                                                         \
-            return 1;                                                                                                  \
-        }                                                                                                              \
-    } while (0);
+#define ASSERT_OK(result)                      \
+  do {                                         \
+    if ((result) != STATUS_OK) {               \
+      printf("An Error Has Occurred\n");       \
+      return 1;                                \
+    }                                          \
+  } while (0)
 
 /* ======================= Matrix Memory Utilities ======================= */
 
