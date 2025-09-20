@@ -3,22 +3,37 @@
 #include <stdlib.h>
 #include <string.h>
 
-const double BETA = 0.5;;
+const double BETA = 0.5;
 
 typedef enum { 
     STATUS_OK = 0,
     STATUS_ERROR = 1,
 } Status;
 
-typedef struct {
+/* Row/column dimensions of a matrix. */
+    typedef struct {
     int rows;
     int cols;
 } Shape;
 
+/* Matrix wrapper: 'data' is a rows-length array of pointers,
+ * each pointing to a cols-length array of doubles (row-major).
+ * Ownership: unless stated otherwise, functions that return a Matrix
+ * allocate 'data' and expect the caller to free it with matrix_data_free(data, rows). */
 typedef struct {
     double** data;
     Shape shape;
 } Matrix;
+
+/* Abort-from-main helper: if (result != STATUS_OK), print a generic error
+ * and return 1 from the current function (int-returning, typically main). */
+#define ASSERT_OK(result)                                                                                         \
+    do {                                                                                                               \
+        if (result != STATUS_OK) {                                                                                       \
+            printf("An Error Has Occurred\n");                                                                         \
+            return 1;                                                                                                  \
+        }                                                                                                              \
+    } while (0);
 
 /* ======================= Matrix Memory Utilities ======================= */
 
@@ -268,7 +283,7 @@ static Status matrix_data_load_from_file(FILE* file, Matrix* out_data) {
  * @brief Load a matrix from a file path into a newly allocated buffer.
  *
  * Opens the file at file_path for reading, delegates parsing and allocation to
- * matrix_load_from_file, closes the stream, and returns the resulting status.
+ * matrix_data_load_from_file, closes the stream, and returns the resulting status.
  *
  * On success, out_data->data points to an allocated table of row pointers,
  * and out_data->shape contains {rows, cols}. On failure, out_data is not
@@ -293,7 +308,7 @@ static Status matrix_data_load_from_path(const char* file_path, Matrix* out_data
         return STATUS_ERROR;
     }
 
-    status_code = matrix_load_from_file(file, out_data);
+    status_code = matrix_data_load_from_file(file, out_data);
     fclose(file);
 
     return status_code;
@@ -665,7 +680,7 @@ void compute_diagonal_degree_matrix (double*** degree_matrix, double** sim_matri
  * @brief Compute the normalized similarity matrix
  *        W = D^{-1/2} A D^{-1/2}.
  *
- * Here A is thesimilarity matrix and D is the diagonal degree
+ * Here A is the similarity matrix and D is the diagonal degree
  * matrix with D[i,i] = sum_j A[i,j]. We build D^{-1/2} by taking the inverse
  * square root of the diagonal (leaving off-diagonals zero) and then compute
  * the sandwich product above.
@@ -731,22 +746,21 @@ static void matrix_data_print(const double* const* data, int rows, int cols) {
 /**
  * @brief Print a square similarity matrix.
  *
- * Verifies that sim_matrix is non-NULL and that matrix.shape is square
- * (rows == cols). If validation fails, returns STATUS_ERROR. Otherwise,
+ * Verifies that sim_matrix is non-NULL. If validation fails, returns STATUS_ERROR. Otherwise,
  * prints the matrix to stdout in the same CSV format as matrix_data_print
  * (comma-separated, "%.4f", one row per line) and returns STATUS_OK.
  *
  * @param matrix     Matrix carrying the shape (rows, cols).
  * @param sim_matrix Pointer to an n*n similarity matrix (read-only).
  *
- * @return STATUS_OK on success; STATUS_ERROR on invalid input or non-square shape.
+ * @return STATUS_OK on success; STATUS_ERROR on invalid input.
  */
 static Status similarity_matrix_print(Matrix matrix, double** sim_matrix) {
-    if (!sim_matrix || matrix.shape.rows != matrix.shape.cols) {
+    if (!sim_matrix) {
         return STATUS_ERROR;
     }
 
-    matrix_data_print((const double* const*)sim_matrix, matrix.shape.rows, matrix.shape.cols);
+    matrix_data_print((const double* const*)sim_matrix, matrix.shape.rows, matrix.shape.rows);
     return STATUS_OK;
 }
 
@@ -754,8 +768,7 @@ static Status similarity_matrix_print(Matrix matrix, double** sim_matrix) {
 /**
  * @brief Print the diagonal degree matrix built from a similarity matrix.
  *
- * Checks that sim_matrix is non-NULL and that matrix.shape is square
- * (rows == cols). Constructs the degree matrix D where D[i][i] is the
+ * Checks that sim_matrix is non-NULL. Constructs the degree matrix D where D[i][i] is the
  * row sum of sim_matrix[i][*], prints D to stdout in the same CSV format
  * as matrix_data_print (comma-separated, "%.4f", one row per line),
  * then frees D.
@@ -772,7 +785,7 @@ static Status similarity_matrix_print(Matrix matrix, double** sim_matrix) {
 static Status diagonal_degree_matrix_print(Matrix matrix, double** sim_matrix) {
     double** degree_matrix;
 
-    if (!sim_matrix || matrix.shape.rows != matrix.shape.cols) {
+    if (!sim_matrix) {
         return STATUS_ERROR;
     }
 
@@ -781,7 +794,7 @@ static Status diagonal_degree_matrix_print(Matrix matrix, double** sim_matrix) {
         return STATUS_ERROR;
     }
 
-    matrix_data_print((const double* const*)degree_matrix, matrix.shape.rows, matrix.shape.cols);
+    matrix_data_print((const double* const*)degree_matrix, matrix.shape.rows, matrix.shape.rows);
     matrix_data_free(degree_matrix, matrix.shape.rows);
     return STATUS_OK;
 }
@@ -789,8 +802,7 @@ static Status diagonal_degree_matrix_print(Matrix matrix, double** sim_matrix) {
 /**
  * @brief Print the normalized similarity matrix W = D^{-1/2} A D^{-1/2}.
  *
- * Checks that sim_matrix is non-NULL and that matrix.shape is square
- * (rows == cols). Constructs the diagonal degree matrix D from sim_matrix,
+ * Checks that sim_matrix is non-NULL. Constructs the diagonal degree matrix D from sim_matrix,
  * computes W, prints W to stdout in the same CSV format as matrix_data_print
  * (comma-separated, "%.4f", one row per line), then frees D and W.
  *
@@ -807,7 +819,7 @@ static Status normalized_similarity_matrix_print(Matrix matrix, double** sim_mat
     double** degree_matrix;
     double** norm_sim_matrix;
     
-    if (!sim_matrix || matrix.shape.rows != matrix.shape.cols) {
+    if (!sim_matrix) {
         return STATUS_ERROR;
     }
 
@@ -822,7 +834,7 @@ static Status normalized_similarity_matrix_print(Matrix matrix, double** sim_mat
         return STATUS_ERROR;
     }
 
-    matrix_data_print((const double* const*)norm_sim_matrix, matrix.shape.rows, matrix.shape.cols);
+    matrix_data_print((const double* const*)norm_sim_matrix, matrix.shape.rows, matrix.shape.rows);
     matrix_data_free(norm_sim_matrix, matrix.shape.rows);
     return STATUS_OK;
 }
@@ -876,17 +888,17 @@ static void symnmf_fill_next_H(double** next_H, double** H, double** WH, double*
 }
 
 /**
- * @brief Replace H with next_H, freeing the old H.
+ * @brief Replace the current H matrix with the next_H matrix.
  *
- * Frees the memory occupied by H and sets H = next_H. Sets next_H to NULL
- * to avoid dangling pointers.
+ * Frees the memory occupied by H and sets H to point to next_H.
+ * Sets next_H to NULL to avoid dangling pointers.
  *
- * @param H       In/Out: pointer to the current factor matrix (to be freed).
- * @param next_H  In/Out: pointer to the new factor matrix (to become H).
- * @param rows    Number of rows in both matrices (must be > 0).
+ * @param H        In/Out: address of the current H pointer (rows x k).
+ * @param next_H   In/Out: address of the next_H pointer (rows x k).
+ * @param rows     Number of rows in H and next_H (must be > 0).
  */
-static void set_H_to_next(double** H, double** next_H, int rows) {
-    matrix_data_free(H, rows);
+static void set_H_to_next(double*** H, double*** next_H, int rows) {
+    matrix_data_free(*H, rows);
     *H = *next_H;
     *next_H = NULL;
 }
@@ -1048,14 +1060,193 @@ void symnmf_iterate_H_until_convergence(double*** H, double** W, int rows, int k
         }
     }
 }
+
+/* ======================= Command-Line Interface ============================= */
 typedef struct {
     const char* filename;
     const char* goal;
 } Arguments;
 
-enum { SYM_ARG_PROG, SYM_ARG_GOAL, SYM_ARG_FILENAME, SYM_ARGC_EXPECTED };
+/* Indices into argv and expected argc for the CLI:
+ * argv[SYM_ARG_PROG]     = program name
+ * argv[SYM_ARG_GOAL]     = goal string: "sym" | "ddg" | "norm"
+ * argv[SYM_ARG_FILENAME] = path to input data file
+ * SYM_ARGC_EXPECTED      = expected argc (3) */
+enum { SYM_ARG_PROG = 0,
+     SYM_ARG_GOAL = 1,
+     SYM_ARG_FILENAME = 2,
+     SYM_ARGC_EXPECTED = 3 };
 
-static Status parse_arguments(int argc, char* argv[], Arguments* out_args) {
-    
+/**
+ * @brief Parse command-line arguments into an Arguments struct.
+ *
+ * Expects exactly three argv entries (program name, goal, filename).
+ * Validates pointers and argc, then assigns:
+ *   out_args->goal     = argv[SYM_ARG_GOAL];
+ *   out_args->filename = argv[SYM_ARG_FILENAME];
+ *
+ * On any error (NULL pointers, wrong argc, or NULL fields), returns STATUS_ERROR
+ * and does not modify out_args.
+ *
+ * @param argc       Argument count received by main.
+ * @param argv       Argument vector received by main.
+ * @param out_args   Output: populated with goal and filename on success.
+ *
+ * @return STATUS_OK on success; STATUS_ERROR on invalid input or format.
+ */
+static Status parse_arguments(int argc, char** argv, Arguments* out_args) {
+    if((!out_args) || (argc != SYM_ARGC_EXPECTED) || (!argv)) {
+        return STATUS_ERROR;
+    }
+
+    out_args->goal = argv[SYM_ARG_GOAL];
+    out_args->filename = argv[SYM_ARG_FILENAME];
+
+    if ((out_args->goal == NULL) || (out_args->filename == NULL)) {
+        return STATUS_ERROR;
+    }
+
+    return STATUS_OK;
 }
 
+/* Goal callback type: prints/handles a matrix derived from sim_matrix. */
+typedef Status sym_goal_fn(Matrix input_matrix, double **sim_matrix);
+typedef sym_goal_fn* sym_goal_fn_ptr;
+
+/**
+ * @brief Map a goal name string to the corresponding function pointer.
+ *
+ * Recognizes the following goal names:
+ *   - "norm" -> &normalized_similarity_matrix_print
+ *   - "ddg"  -> &diagonal_degree_matrix_print
+ *   - "sym"  -> &similarity_matrix_print
+ *
+ * If goal_name is NULL, out_goal_fn is NULL, or the goal name is unrecognized,
+ * returns STATUS_ERROR and does not modify out_goal_fn. Otherwise, sets
+ * *out_goal_fn to the corresponding function pointer and returns STATUS_OK.
+ *
+ * @param goal_name     Input goal name string (e.g., "norm", "ddg", "sym").
+ * @param out_goal_fn   Output: receives the corresponding function pointer on success.
+ *
+ * @return STATUS_OK on success; STATUS_ERROR on invalid input or unrecognized goal name.
+ */
+static Status get_goal_function(const char* goal_name, sym_goal_fn_ptr* out_goal_fn) {
+    if (!goal_name || !out_goal_fn) {
+        return STATUS_ERROR;
+    }
+
+    if (strcmp(goal_name, "norm") == 0) {
+        *out_goal_fn = &normalized_similarity_matrix_print;
+    } else if (strcmp(goal_name, "ddg") == 0) {
+        *out_goal_fn = &diagonal_degree_matrix_print;
+    } else if (strcmp(goal_name, "sym") == 0) {
+        *out_goal_fn = &similarity_matrix_print;
+    } else {
+        return STATUS_ERROR;
+    }
+
+    return STATUS_OK;
+}
+
+/**
+ * @brief Compute the similarity matrix and invoke the specified goal function.
+ *
+ * Given an input_matrix and a goal function pointer, computes the similarity
+ * matrix and then calls the goal function with (input_matrix, sim_matrix).
+ * Frees the similarity matrix before returning.
+ *
+ * If goal_fn is NULL or any step fails, returns STATUS_ERROR.
+ *
+ * @param input_matrix  Input data matrix (read-only).
+ * @param goal_fn       Function pointer to the goal function to invoke.
+ *
+ * @return The status code returned by the goal function on success;
+ *         STATUS_ERROR on invalid input or failure.
+ */
+static Status compute_similarity_matrix_and_run_goal(Matrix input_matrix, sym_goal_fn_ptr goal_fn) {
+    Status status_code;
+    double** sim_matrix;
+
+    if (!goal_fn) {
+        return STATUS_ERROR;
+    }
+
+    compute_similarity_matrix(&sim_matrix, input_matrix.data, input_matrix.shape.rows, input_matrix.shape.cols);
+    if (!sim_matrix) {
+        return STATUS_ERROR;
+    }
+
+    status_code = goal_fn(input_matrix, sim_matrix);
+    matrix_data_free(sim_matrix, input_matrix.shape.rows);
+    
+    return status_code;
+}
+
+/**
+ * @brief Load data from a file, compute similarity matrix, and run the goal function.
+ * 
+ * Loads a matrix from the specified file path, computes its similarity matrix,
+ * and invokes the provided goal function with the loaded matrix and the computed
+ * similarity matrix. Frees all allocated resources before returning.
+ * 
+ * @param filepath  Path to the input data file.
+ * @param goal_fn   Function pointer to the goal function to invoke.
+ * 
+ * @return STATUS_OK if all operations succeed; STATUS_ERROR on any failure.
+ * 
+ */
+static Status load_data_and_run_goal(const char *filepath, sym_goal_fn_ptr goal_fn) {
+    Matrix input_matrix;
+    Status status_code;
+
+    if (!filepath || !goal_fn) {
+        return STATUS_ERROR;
+    }
+
+    status_code = matrix_data_load_from_path(filepath, &input_matrix);
+    if (status_code != STATUS_OK) {
+        return STATUS_ERROR;
+    }
+
+    status_code = compute_similarity_matrix_and_run_goal(input_matrix, goal_fn);
+    matrix_data_free(input_matrix.data, input_matrix.shape.rows);
+
+    return status_code;
+}
+
+/**
+ * Entry point: parse args, resolve goal, run, and report errors.
+ *
+ * Usage:
+ *   prog <goal> <filename>
+ *     goal     one of: "sym", "ddg", "norm"
+ *     filename path to CSV-like data file
+ *
+ * Behavior:
+ *   - Parses CLI arguments.
+ *   - Maps <goal> to the corresponding print routine.
+ *   - Loads data, builds similarity matrix, and prints the requested output.
+ *
+ * Return codes:
+ *   0  on success
+ *   1  on failure (via ASSERT_OK macro)
+ *
+ * Side effects:
+ *   Prints matrices to stdout; prints a generic error message on failure.
+ */
+int main(int argc, char** argv) {
+    Arguments args;
+    Status status_code;
+    sym_goal_fn_ptr goal_fn;
+
+    status_code = parse_arguments(argc, argv, &args);
+    ASSERT_OK(status_code);
+
+    status_code = get_goal_function(args.goal, &goal_fn);
+    ASSERT_OK(status_code);
+
+    status_code = load_data_and_run_goal(args.filename, goal_fn);
+    ASSERT_OK(status_code);
+
+    return 0;
+} 
