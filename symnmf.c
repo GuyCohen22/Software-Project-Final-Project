@@ -2,8 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "symnmf.h"
 
-const double BETA = 0.5;
+static const double BETA = 0.5;
 
 typedef enum { 
     STATUS_OK = 0,
@@ -590,7 +591,7 @@ static double** matrix_data_elementwise_inv_sqrt(const double* const* data, int 
                 matrix_data_free(inv_sqrt_data, n);
                 return NULL;
             } else if (data[i][j] == 0) {
-                inv_sqrt_data[i][j] = 0; // Define 1/sqrt(0) as 0 to avoid division by zero
+                inv_sqrt_data[i][j] = 0; /* Define 1/sqrt(0) as 0 to avoid division by zero */
             } else {
             inv_sqrt_data[i][j] = 1.0 / sqrt(data[i][j]);
             }
