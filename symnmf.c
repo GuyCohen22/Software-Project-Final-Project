@@ -8,7 +8,7 @@ static const double BETA = 0.5;
 
 typedef enum { 
     STATUS_OK = 0,
-    STATUS_ERROR = 1,
+    STATUS_ERROR = 1
 } Status;
 
 /* Row/column dimensions of a matrix. */
@@ -326,7 +326,7 @@ static Status matrix_data_load_from_path(const char* file_path, Matrix* out_data
  *
  * @return The Euclidean distance as a double.
  */
-static double euclidean_distance(const double* vector1, const double* vector2, int dim) {
+static double euclidean_distance(double* vector1, double* vector2, int dim) {
     int i;
     double sum = 0;
     
@@ -349,7 +349,7 @@ static double euclidean_distance(const double* vector1, const double* vector2, i
  *
  * @return The squared Frobenius norm on success; -1 if inputs are invalid.
  */
-static double calculate_frobenius_norm_squared(const double* const* data, int rows, int cols) {
+static double calculate_frobenius_norm_squared(double** data, int rows, int cols) {
     int i, j;
     double sum = 0;
 
@@ -378,7 +378,7 @@ static double calculate_frobenius_norm_squared(const double* const* data, int ro
  *
  * @return The sum of the elements as a double.
  */
-static double sum_vector_coordinates(const double* vector, int dim) {
+static double sum_vector_coordinates(double* vector, int dim) {
     int i;
     double sum = 0;
 
@@ -402,7 +402,7 @@ static double sum_vector_coordinates(const double* vector, int dim) {
  * @return A newly allocated cols*rows matrix containing the transpose on success;
  *         NULL on invalid input or allocation failure.
  */
-static double** matrix_data_transpose(const double* const* data, int rows, int cols) {
+static double** matrix_data_transpose(double** data, int rows, int cols) {
     int i, j;
     double** transposed_data;
     
@@ -439,7 +439,7 @@ static double** matrix_data_transpose(const double* const* data, int rows, int c
  * @return A newly allocated rows*cols matrix containing the differences
  *         on success; NULL on invalid input or allocation failure.
  */
-static double** matrix_data_subtract(const double* const* data1, const double* const* data2, int rows, int cols) {
+static double** matrix_data_subtract(double** data1, double** data2, int rows, int cols) {
     int i, j;
     double** diff_data;
 
@@ -480,7 +480,7 @@ static double** matrix_data_subtract(const double* const* data1, const double* c
  *         NULL if inputs are invalid, dimensions are incompatible,
  *         or allocation fails.
  */
-static double** matrix_data_multiply(const double* const* data1, const double* const* data2,
+static double** matrix_data_multiply(double** data1, double** data2,
     int rows1, int cols1, int rows2, int cols2) {
         int i, j, k;
         double** multiplied_data;
@@ -536,7 +536,7 @@ static double** matrix_data_multiply(const double* const* data1, const double* c
  * @return A newly allocated rows1 x cols3 matrix on success;
  *         NULL if any multiplication fails or dimensions are incompatible.
  */
-static double** matrix_data_multiply_three(const double* const* data1, const double* const* data2, const double* const* data3,
+static double** matrix_data_multiply_three(double** data1, double** data2, double** data3,
     int rows1, int cols1, int rows2, int cols2, int rows3, int cols3) {
         double** data1data2;
         double** all_three_multiplied;
@@ -572,7 +572,7 @@ static double** matrix_data_multiply_three(const double* const* data1, const dou
  *         is invalid, memory allocation fails, or a negative entry
  *         is found. Caller must free with matrix_data_free(..., n).
  */
-static double** matrix_data_elementwise_inv_sqrt(const double* const* data, int n) {
+static double** matrix_data_elementwise_inv_sqrt(double** data, int n) {
     int i, j;
     double** inv_sqrt_data;
 
@@ -615,7 +615,7 @@ static double** matrix_data_elementwise_inv_sqrt(const double* const* data, int 
  *
  * @return Similarity between two vectors.
  */
-static double similarity_of_two_vectors(const double* vector1, const double* vector2, int dim) {
+static double similarity_of_two_vectors(double* vector1, double* vector2, int dim) {
     double distance;
     distance = euclidean_distance(vector1, vector2, dim);
     return exp(-BETA * distance * distance);
@@ -731,7 +731,7 @@ void compute_normalized_similarity_matrix(double*** out_norm_sim_matrix, double*
  * @param rows Number of rows to print (> 0).
  * @param cols Number of columns to print (> 0).
  */
-static void matrix_data_print(const double* const* data, int rows, int cols) {
+static void matrix_data_print(double** data, int rows, int cols) {
     int i, j;
     for (i = 0; i < rows; i++) {
         for (j = 0; j < cols; j++) {
@@ -761,7 +761,7 @@ static Status similarity_matrix_print(Matrix matrix, double** sim_matrix) {
         return STATUS_ERROR;
     }
 
-    matrix_data_print((const double* const*)sim_matrix, matrix.shape.rows, matrix.shape.rows);
+    matrix_data_print((double**)sim_matrix, matrix.shape.rows, matrix.shape.rows);
     return STATUS_OK;
 }
 
@@ -795,7 +795,7 @@ static Status diagonal_degree_matrix_print(Matrix matrix, double** sim_matrix) {
         return STATUS_ERROR;
     }
 
-    matrix_data_print((const double* const*)degree_matrix, matrix.shape.rows, matrix.shape.rows);
+    matrix_data_print((double**)degree_matrix, matrix.shape.rows, matrix.shape.rows);
     matrix_data_free(degree_matrix, matrix.shape.rows);
     return STATUS_OK;
 }
@@ -835,7 +835,7 @@ static Status normalized_similarity_matrix_print(Matrix matrix, double** sim_mat
         return STATUS_ERROR;
     }
 
-    matrix_data_print((const double* const*)norm_sim_matrix, matrix.shape.rows, matrix.shape.rows);
+    matrix_data_print((double**)norm_sim_matrix, matrix.shape.rows, matrix.shape.rows);
     matrix_data_free(norm_sim_matrix, matrix.shape.rows);
     return STATUS_OK;
 }
@@ -986,7 +986,7 @@ static Status symnmf_compute_H_update_intermediate_matrices(double** H, double**
  *
  * @return STATUS_OK on success; STATUS_ERROR on allocation or compute failure.
  */
-static Status symnmf_perform_H_step(double*** H, double*** out_next_H, double** W, double** matrices[3], int rows, const int k, const double EPSILON, int* has_converged) {
+static Status symnmf_perform_H_step(double*** H, double*** out_next_H, double** W, double** matrices[3], const int rows, const int k, const double EPSILON, int* has_converged) {
     *out_next_H = matrix_data_alloc(rows, k);
     if (!*out_next_H) {
         return STATUS_ERROR;
@@ -1007,7 +1007,7 @@ static Status symnmf_perform_H_step(double*** H, double*** out_next_H, double** 
         return STATUS_ERROR;
     }
 
-    *has_converged = (calculate_frobenius_norm_squared((const double* const*)matrices[2], rows, k) < EPSILON);
+    *has_converged = (calculate_frobenius_norm_squared((double**)matrices[2], rows, k) < EPSILON);
 
     set_H_to_next(H, out_next_H, rows);
     matrix_data_array_free(matrices, 3, rows);
