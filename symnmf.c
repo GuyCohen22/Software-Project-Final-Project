@@ -843,27 +843,31 @@ static Status normalized_similarity_matrix_print(Matrix matrix, double** sim_mat
 /* ======================= SymNMF Optimization ================================ */
 
 /**
- * @brief Update a single entry H[i][j] using the SymNMF update rule.
+ * @brief Update a single entry H[i][j] using an epsilon-stabilized SymNMF rule.
  *
- * Uses the formula:
- *   H[i][j] = H[i][j] * (1 - BETA + BETA * (WH[i][j] / HHtH[i][j]))
- * If HHtH[i][j] == 0, sets H[i][j] = 0 to avoid division by zero.
+ * Update rule:
+ *   Let den = max(HHtH[i][j], DEN_EPS) where DEN_EPS = 1e-6.
+ *   Then compute:
+ *     H[i][j] <- max(0,
+ *                    H[i][j] * (1 - BETA + BETA * (WH[i][j] / den)))
  *
  * @param next_H  Out: table of row pointers to receive the updated value.
- * @param H      In: current factor matrix (read-only).
- * @param WH     In: precomputed W*H matrix (read-only).
- * @param HHtH   In: precomputed H*H^T*H matrix (read-only).
- * @param i      Row index of the entry to update (0 <= i < rows).
- * @param j      Column index of the entry to update (0 <= j < cols).
+ * @param H       In: current factor matrix (read-only).
+ * @param WH      In: precomputed W*H matrix (read-only).
+ * @param HHtH    In: precomputed H*H^T*H matrix (read-only).
+ * @param i       Row index of the entry to update (0 <= i < rows).
+ * @param j       Column index of the entry to update (0 <= j < cols).
  */
+
 static void symnmf_update_H_entry(double** next_H, double** H, double** WH, double** HHtH, int i, int j) {
+    const double DEN_EPS = 1e-6; /* small constant to avoid division by zero */
     double update_factor;
-    if (HHtH[i][j] == 0) {
-        next_H[i][j] = 0;
+    if (HHtH[i][j] <= DEN_EPS) {
+        update_factor = 1 - BETA + BETA * (WH[i][j] / DEN_EPS);
     } else {
-        update_factor = 1 - BETA + (BETA * (WH[i][j] / HHtH[i][j]));
-        next_H[i][j] = H[i][j] * update_factor;
+        update_factor = 1 - BETA + BETA * (WH[i][j] / HHtH[i][j]);
     }
+    next_H[i][j] = H[i][j] * update_factor;
 }
 
 /**
@@ -1250,4 +1254,4 @@ int main(int argc, char** argv) {
     ASSERT_OK(status_code);
 
     return 0;
-} 
+}
